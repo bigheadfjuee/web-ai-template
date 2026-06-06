@@ -1,0 +1,33 @@
+# VCS
+.git
+.gitignore
+
+# Spectra
+.spectra
+openspec
+
+# Frontend local state
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Backend local state
+backend/.venv
+backend/__pycache__
+backend/**/__pycache__
+backend/*.pyc
+backend/.pytest_cache
+backend/.ruff_cache
+
+# Env files
+**/.env
+**/.env.*
+
+# Editor / OS noise
+**/.DS_Store
+.idea
+.vscode
+
+# Docker artifacts
+Dockerfile
+docker-compose.yml
