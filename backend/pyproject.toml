@@ -4,8 +4,12 @@ version = "0.1.0"
 description = "FastAPI backend scaffold for the web-ai-template."
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.13",
+    "asyncpg>=0.29",
     "fastapi>=0.115",
+    "pydantic[email]>=2.5",
     "pydantic-settings>=2.5",
+    "sqlalchemy[asyncio]>=2.0",
     "uvicorn[standard]>=0.30",
 ]
 

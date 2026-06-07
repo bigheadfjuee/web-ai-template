@@ -1,8 +1,28 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppassword
+      POSTGRES_DB: appdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://appuser:apppassword@postgres:5432/appdb
+    depends_on:
+      postgres:
+        condition: service_healthy
     expose:
       - "8000"
     restart: unless-stopped
@@ -17,3 +37,6 @@ services:
       - "80:80"
       - "443:443"
     restart: unless-stopped
+
+volumes:
+  postgres_data:
