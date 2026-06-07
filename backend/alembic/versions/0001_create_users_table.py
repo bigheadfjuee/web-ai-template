@@ -5,6 +5,9 @@ Revises:
 Create Date: 2026-06-07
 """
 
+import sqlalchemy as sa
+from alembic import op
+
 revision = "0001"
 down_revision = None
 branch_labels = None
@@ -12,21 +15,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    from alembic import op
-
-    op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
-    op.execute("""
-        CREATE TABLE users (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            username VARCHAR(128) NOT NULL UNIQUE,
-            email VARCHAR(256) NOT NULL UNIQUE,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
+    op.create_table(
+        "users",
+        sa.Column("id", sa.Uuid, primary_key=True),
+        sa.Column("username", sa.String(128), nullable=False, unique=True),
+        sa.Column("email", sa.String(256), nullable=False, unique=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+    )
 
 
 def downgrade() -> None:
-    from alembic import op
-
-    op.execute("DROP TABLE IF EXISTS users")
+    op.drop_table("users")

@@ -5,15 +5,15 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.db import Base
-import app.models  # noqa: F401 — ensures all mapped classes are registered
+from sqlmodel import SQLModel
+import app.models  # noqa: F401 — ensures all mapped classes are registered before metadata is read
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = SQLModel.metadata
 
 DATABASE_URL = (
     os.environ.get("DATABASE_URL")

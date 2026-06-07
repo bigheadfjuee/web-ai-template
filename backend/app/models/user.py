@@ -1,26 +1,29 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String, text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
-
-from app.db import Base
+import sqlalchemy as sa
+from sqlalchemy import Column
+from sqlmodel import Field, SQLModel
 
 
-class User(Base):
+class User(SQLModel, table=True):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        sa_column=Column(sa.Uuid, primary_key=True, default=uuid.uuid4),
     )
-    username: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("now()"), nullable=False
+    username: str = Field(
+        sa_column=Column(sa.String(128), unique=True, nullable=False)
     )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("now()"), nullable=False
+    email: str = Field(
+        sa_column=Column(sa.String(256), unique=True, nullable=False)
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(tz=timezone.utc),
+        sa_column=Column(sa.DateTime(timezone=True), nullable=False),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(tz=timezone.utc),
+        sa_column=Column(sa.DateTime(timezone=True), nullable=False),
     )

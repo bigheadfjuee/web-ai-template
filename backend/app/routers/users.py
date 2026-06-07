@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.schemas.user import UserCreate, UserPublic, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
 async def create_user(body: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
     user = User(username=body.username, email=body.email)
     db.add(user)
@@ -29,7 +29,7 @@ async def create_user(body: UserCreate, db: AsyncSession = Depends(get_db)) -> U
     return user
 
 
-@router.get("", response_model=list[UserResponse])
+@router.get("", response_model=list[UserPublic])
 async def list_users(
     skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
 ) -> list[User]:
@@ -37,7 +37,7 @@ async def list_users(
     return list(result.scalars().all())
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}", response_model=UserPublic)
 async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> User:
     user = await db.get(User, user_id)
     if user is None:
@@ -45,7 +45,7 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Us
     return user
 
 
-@router.put("/{user_id}", response_model=UserResponse)
+@router.put("/{user_id}", response_model=UserPublic)
 async def update_user(
     user_id: uuid.UUID, body: UserUpdate, db: AsyncSession = Depends(get_db)
 ) -> User:

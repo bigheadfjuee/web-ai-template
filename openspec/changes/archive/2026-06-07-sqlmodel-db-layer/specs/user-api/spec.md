@@ -1,10 +1,4 @@
-# user-api Specification
-
-## Purpose
-
-TBD - created by archiving change 'user-management-crud'. Update Purpose after archive.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: User model
 
@@ -28,23 +22,6 @@ The import `from sqlalchemy.dialects.postgresql import UUID` MUST NOT appear in 
 - **WHEN** `uv run python -c "from app.models.user import User; print(User.__tablename__)"` is run from `backend/`
 - **THEN** the output is `users` and no import error occurs
 
-
-<!-- @trace
-source: sqlmodel-db-layer
-updated: 2026-06-07
-code:
-  - backend/app/schemas/__init__.py
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/pyproject.toml
-  - backend/alembic/env.py
-  - backend/app/db.py
-  - backend/app/routers/users.py
-  - backend/uv.lock
-  - backend/app/schemas/user.py
-  - backend/app/models/user.py
--->
-
----
 ### Requirement: Pydantic v2 request and response schemas
 
 The `backend/app/schemas/user.py` SHALL be rewritten using SQLModel classes:
@@ -66,23 +43,6 @@ The `backend/app/schemas/user.py` SHALL be rewritten using SQLModel classes:
 - **WHEN** `grep "UserResponse" backend/app/routers/users.py` is run
 - **THEN** the command returns no output (UserResponse is no longer referenced)
 
-
-<!-- @trace
-source: sqlmodel-db-layer
-updated: 2026-06-07
-code:
-  - backend/app/schemas/__init__.py
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/pyproject.toml
-  - backend/alembic/env.py
-  - backend/app/db.py
-  - backend/app/routers/users.py
-  - backend/uv.lock
-  - backend/app/schemas/user.py
-  - backend/app/models/user.py
--->
-
----
 ### Requirement: CRUD router at /api/users
 
 The `backend/app/routers/users.py` SHALL be updated to import `UserPublic` instead of `UserResponse` in all `response_model=` arguments and return-type annotations. No endpoint path, HTTP method, status code, or JSON field name changes.
@@ -91,56 +51,3 @@ The `backend/app/routers/users.py` SHALL be updated to import `UserPublic` inste
 
 - **WHEN** the backend starts after the SQLModel migration and `GET /api/users` is called
 - **THEN** the response status is `200` and the body is a JSON array (confirming the router is registered and the schema serializes correctly)
-
-
-<!-- @trace
-source: sqlmodel-db-layer
-updated: 2026-06-07
-code:
-  - backend/app/schemas/__init__.py
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/pyproject.toml
-  - backend/alembic/env.py
-  - backend/app/db.py
-  - backend/app/routers/users.py
-  - backend/uv.lock
-  - backend/app/schemas/user.py
-  - backend/app/models/user.py
--->
-
----
-### Requirement: IntegrityError mapped to 409
-
-The backend SHALL catch `sqlalchemy.exc.IntegrityError` raised by unique constraint violations on `username` or `email` and return `409` with body `{"detail":"Username or email already exists"}`. The error SHALL NOT propagate as a `500`.
-
-#### Scenario: IntegrityError on email update returns 409
-
-- **WHEN** `PUT /api/users/{id}` is called with an `email` value already used by another user
-- **THEN** the response status is `409` and the body is `{"detail":"Username or email already exists"}`
-
-<!-- @trace
-source: user-management-crud
-updated: 2026-06-07
-code:
-  - backend/app/routers/users.py
-  - frontend/src/App.vue
-  - backend/app/config.py
-  - backend/app/main.py
-  - backend/alembic/env.py
-  - backend/app/db.py
-  - backend/alembic.ini
-  - backend/app/schemas/user.py
-  - backend/alembic/script.py.mako
-  - backend/app/models/user.py
-  - backend/app/models/__init__.py
-  - backend/alembic/README
-  - docker-compose.yml
-  - frontend/src/views/UsersView.vue
-  - backend/app/schemas/__init__.py
-  - frontend/src/api/users.ts
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/app/routers/__init__.py
-  - backend/uv.lock
-  - backend/Dockerfile
-  - backend/pyproject.toml
--->

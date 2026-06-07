@@ -52,39 +52,27 @@ The backend SHALL configure CORS to allow requests with origin `http://localhost
 ---
 ### Requirement: SQLAlchemy and Alembic dependencies
 
-The `backend/pyproject.toml` SHALL declare `sqlalchemy[asyncio]>=2.0`, `asyncpg`, `alembic`, and `pydantic[email]` as runtime dependencies. Running `uv sync --frozen` after updating the lockfile MUST install all new packages without error.
+The `backend/pyproject.toml` SHALL declare `sqlmodel>=0.0.21` as a runtime dependency in addition to the existing `alembic`, `asyncpg`, and `pydantic[email]` entries. The direct `sqlalchemy[asyncio]` entry SHALL be retained (SQLModel re-exports it but the explicit pin keeps the version locked). Running `uv sync --frozen` after updating the lockfile MUST install all packages without error, and `from sqlmodel import SQLModel` MUST be importable.
 
-#### Scenario: New dependencies install from updated lockfile
+#### Scenario: SQLModel importable after sync
 
-- **WHEN** `uv sync --frozen` is run after `uv lock` has recorded the new packages
-- **THEN** the command exits with status `0` and `sqlalchemy`, `asyncpg`, `alembic`, and `email-validator` are importable from within the virtualenv
+- **WHEN** `uv sync --frozen` is run after `uv lock` has recorded `sqlmodel`
+- **THEN** the command exits with status `0` and `uv run python -c "from sqlmodel import SQLModel; print('ok')"` prints `ok`
 
 
 <!-- @trace
-source: user-management-crud
+source: sqlmodel-db-layer
 updated: 2026-06-07
 code:
-  - backend/app/routers/users.py
-  - frontend/src/App.vue
-  - backend/app/config.py
-  - backend/app/main.py
+  - backend/app/schemas/__init__.py
+  - backend/alembic/versions/0001_create_users_table.py
+  - backend/pyproject.toml
   - backend/alembic/env.py
   - backend/app/db.py
-  - backend/alembic.ini
-  - backend/app/schemas/user.py
-  - backend/alembic/script.py.mako
-  - backend/app/models/user.py
-  - backend/app/models/__init__.py
-  - backend/alembic/README
-  - docker-compose.yml
-  - frontend/src/views/UsersView.vue
-  - backend/app/schemas/__init__.py
-  - frontend/src/api/users.ts
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/app/routers/__init__.py
+  - backend/app/routers/users.py
   - backend/uv.lock
-  - backend/Dockerfile
-  - backend/pyproject.toml
+  - backend/app/schemas/user.py
+  - backend/app/models/user.py
 -->
 
 ---

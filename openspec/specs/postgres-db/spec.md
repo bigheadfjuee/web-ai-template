@@ -51,82 +51,58 @@ code:
 ---
 ### Requirement: SQLAlchemy 2 async engine and session factory
 
-The backend SHALL use SQLAlchemy 2 with async support (`sqlalchemy[asyncio]`) and the `asyncpg` driver. The async engine and `AsyncSessionLocal` session factory SHALL be defined in `backend/app/db.py`. The engine SHALL be created from the `DATABASE_URL` setting in `app/config.py` and torn down during FastAPI's lifespan shutdown.
+The `backend/app/db.py` module SHALL replace `class Base(DeclarativeBase)` with `from sqlmodel import SQLModel` and expose `SQLModel.metadata` as the authoritative metadata object used by Alembic's `env.py` `target_metadata`. The async engine, `AsyncSessionLocal`, and `get_db` dependency SHALL remain functionally identical — only the metadata source changes.
 
-#### Scenario: Session factory provides async sessions
+#### Scenario: SQLModel.metadata used by Alembic env
 
-- **WHEN** a FastAPI route handler calls the `get_db` dependency
-- **THEN** it receives an `AsyncSession` connected to the PostgreSQL database; the session is closed after the request completes
+- **WHEN** `backend/alembic/env.py` imports `target_metadata` from `app.db`
+- **THEN** `target_metadata` is `SQLModel.metadata` and contains the `users` table definition after `app.models` is imported
 
 
 <!-- @trace
-source: user-management-crud
+source: sqlmodel-db-layer
 updated: 2026-06-07
 code:
-  - backend/app/routers/users.py
-  - frontend/src/App.vue
-  - backend/app/config.py
-  - backend/app/main.py
+  - backend/app/schemas/__init__.py
+  - backend/alembic/versions/0001_create_users_table.py
+  - backend/pyproject.toml
   - backend/alembic/env.py
   - backend/app/db.py
-  - backend/alembic.ini
-  - backend/app/schemas/user.py
-  - backend/alembic/script.py.mako
-  - backend/app/models/user.py
-  - backend/app/models/__init__.py
-  - backend/alembic/README
-  - docker-compose.yml
-  - frontend/src/views/UsersView.vue
-  - backend/app/schemas/__init__.py
-  - frontend/src/api/users.ts
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/app/routers/__init__.py
+  - backend/app/routers/users.py
   - backend/uv.lock
-  - backend/Dockerfile
-  - backend/pyproject.toml
+  - backend/app/schemas/user.py
+  - backend/app/models/user.py
 -->
 
 ---
 ### Requirement: Alembic migration for users table
 
-The backend SHALL use Alembic for schema management. A migration `0001_create_users_table` SHALL create the `users` table with columns: `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `username VARCHAR(128) UNIQUE NOT NULL`, `email VARCHAR(256) UNIQUE NOT NULL`, `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`, `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`. Running `alembic upgrade head` SHALL apply the migration; running `alembic downgrade -1` SHALL drop the table.
+The Alembic migration `0001_create_users_table` SHALL be updated so that its `upgrade()` function uses dialect-agnostic SQLAlchemy types only: `sa.Uuid` for the `id` column (no `server_default`), `sa.String(128)` for `username`, `sa.String(256)` for `email`, and `sa.DateTime(timezone=True)` for `created_at` and `updated_at` (no `server_default`). The `pgcrypto` extension creation and `gen_random_uuid()` function reference MUST be removed. The `downgrade()` function remains `DROP TABLE IF EXISTS users`. Running `alembic upgrade head` on a fresh database MUST succeed and produce a `users` table; running `alembic downgrade -1` MUST drop it.
 
-#### Scenario: Migration applies cleanly
+#### Scenario: Migration applies without PostgreSQL extensions
 
-- **WHEN** `alembic upgrade head` is run against an empty database
-- **THEN** the `users` table exists with all five columns and their constraints; the `alembic_version` table records the migration as applied
+- **WHEN** `alembic upgrade head` is run against a fresh PostgreSQL database without the `pgcrypto` extension pre-installed
+- **THEN** the migration exits with status `0` and the `users` table is created with columns `id`, `username`, `email`, `created_at`, `updated_at`
 
 #### Scenario: Migration is reversible
 
-- **WHEN** `alembic downgrade -1` is run after `alembic upgrade head`
+- **WHEN** `alembic downgrade -1` is run after a successful `alembic upgrade head`
 - **THEN** the `users` table is dropped and `alembic_version` records no applied revisions
 
 
 <!-- @trace
-source: user-management-crud
+source: sqlmodel-db-layer
 updated: 2026-06-07
 code:
-  - backend/app/routers/users.py
-  - frontend/src/App.vue
-  - backend/app/config.py
-  - backend/app/main.py
+  - backend/app/schemas/__init__.py
+  - backend/alembic/versions/0001_create_users_table.py
+  - backend/pyproject.toml
   - backend/alembic/env.py
   - backend/app/db.py
-  - backend/alembic.ini
-  - backend/app/schemas/user.py
-  - backend/alembic/script.py.mako
-  - backend/app/models/user.py
-  - backend/app/models/__init__.py
-  - backend/alembic/README
-  - docker-compose.yml
-  - frontend/src/views/UsersView.vue
-  - backend/app/schemas/__init__.py
-  - frontend/src/api/users.ts
-  - backend/alembic/versions/0001_create_users_table.py
-  - backend/app/routers/__init__.py
+  - backend/app/routers/users.py
   - backend/uv.lock
-  - backend/Dockerfile
-  - backend/pyproject.toml
+  - backend/app/schemas/user.py
+  - backend/app/models/user.py
 -->
 
 ---
