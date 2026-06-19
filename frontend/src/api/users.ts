@@ -26,9 +26,11 @@ export interface UserUpdate {
   email?: string
 }
 
+import { getToken } from '../auth'
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
     ...init,
   })
   if (!res.ok) {

@@ -1,4 +1,23 @@
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev --import-realm
+    environment:
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: localhost
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /auth/realms/master HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.0 200' <&3"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
   mssql:
     image: mcr.microsoft.com/mssql/server:2019-latest
     platform: linux/amd64
@@ -43,9 +62,12 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: "mssql+aioodbc://appuser:AppPassword%212026@mssql:1433/appdb?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/auth/realms/app/protocol/openid-connect/certs
     depends_on:
       mssql-init:
         condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
     expose:
       - "8000"
     restart: unless-stopped

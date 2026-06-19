@@ -20,6 +20,9 @@ __pycache__/
 .env.*
 !.env.example
 
+# Keycloak — never commit keytab files
+keycloak/*.keytab
+
 # Editors / OS
 .DS_Store
 .idea/
