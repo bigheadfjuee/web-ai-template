@@ -1,28 +1,51 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    platform: linux/amd64
     environment:
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: apppassword
-      POSTGRES_DB: appdb
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: SaPassword!2026
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mssql_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "SQLCMD=/opt/mssql-tools18/bin/sqlcmd; SQLCMD_TLS_ARGS=-C; if [ ! -x \"$$SQLCMD\" ]; then SQLCMD=/opt/mssql-tools/bin/sqlcmd; SQLCMD_TLS_ARGS=; fi; \"$$SQLCMD\" -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" $$SQLCMD_TLS_ARGS -Q \"SELECT 1\""]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
     restart: unless-stopped
+
+  mssql-init:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: SaPassword!2026
+      MSSQL_APP_PASSWORD: AppPassword!2026
+    depends_on:
+      mssql:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -c
+      - |
+        SQLCMD=/opt/mssql-tools18/bin/sqlcmd
+        SQLCMD_TLS_ARGS=-C
+        if [ ! -x "$$SQLCMD" ]; then SQLCMD=/opt/mssql-tools/bin/sqlcmd; SQLCMD_TLS_ARGS=; fi
+        "$$SQLCMD" -S mssql -U sa -P "$$MSSQL_SA_PASSWORD" $$SQLCMD_TLS_ARGS -Q "IF DB_ID(N'appdb') IS NULL CREATE DATABASE [appdb]; IF SUSER_ID(N'appuser') IS NULL CREATE LOGIN [appuser] WITH PASSWORD=N'$$MSSQL_APP_PASSWORD';"
+        "$$SQLCMD" -S mssql -U sa -P "$$MSSQL_SA_PASSWORD" $$SQLCMD_TLS_ARGS -d appdb -Q "IF USER_ID(N'appuser') IS NULL CREATE USER [appuser] FOR LOGIN [appuser]; IF IS_ROLEMEMBER(N'db_owner', N'appuser') = 0 ALTER ROLE [db_owner] ADD MEMBER [appuser];"
+    restart: "no"
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql+asyncpg://appuser:apppassword@postgres:5432/appdb
+      DATABASE_URL: "mssql+aioodbc://appuser:AppPassword%212026@mssql:1433/appdb?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
     depends_on:
-      postgres:
-        condition: service_healthy
+      mssql-init:
+        condition: service_completed_successfully
     expose:
       - "8000"
     restart: unless-stopped
@@ -39,4 +62,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  mssql_data:

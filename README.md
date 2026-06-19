@@ -4,7 +4,7 @@ Runnable starting point for AI-related web projects:
 
 - **Frontend** — Vite + Vue 3 + TypeScript SPA under `frontend/`
 - **Backend** — FastAPI (managed by `uv`) under `backend/`
-- **Deploy** — `docker compose` brings up both services behind nginx on host ports `80` (HTTP → HTTPS redirect) and `443` (HTTPS, self-signed cert)
+- **Deploy** — `docker compose` brings up SQL Server 2019, the backend, and nginx on host ports `80` (HTTP → HTTPS redirect) and `443` (HTTPS, self-signed cert)
 
 ## Quickstart — Containers
 
@@ -18,7 +18,7 @@ Then verify (the cert is self-signed, so `curl -k` / browser "accept risk" is ex
 - Health endpoint: <https://localhost/api/health> → `{"status":"ok"}`
 - HTTP redirect: `curl -kI http://localhost/` → `301 Location: https://localhost/`
 
-Only the `nginx` service is published on the host (ports `80` and `443`); the `backend` service is reachable only on the internal Compose network as `backend:8000`. The self-signed certificate is generated inside the nginx image at build time (`CN=localhost`, valid 365 days).
+Only the `nginx` service is published on the host (ports `80` and `443`); the `backend` service is reachable only on the internal Compose network as `backend:8000`, and the `mssql` service uses the internal Compose network as `mssql:1433`. The self-signed certificate is generated inside the nginx image at build time (`CN=localhost`, valid 365 days).
 
 ## Quickstart — Local Backend
 

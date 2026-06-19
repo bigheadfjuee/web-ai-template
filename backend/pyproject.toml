@@ -5,8 +5,10 @@ description = "FastAPI backend scaffold for the web-ai-template."
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.13",
+    "aioodbc>=0.5",
     "asyncpg>=0.29",
     "fastapi>=0.115",
+    "pyodbc>=5.2",
     "pydantic[email]>=2.5",
     "pydantic-settings>=2.5",
     "sqlalchemy[asyncio]>=2.0",

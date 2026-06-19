@@ -33,7 +33,7 @@ async def create_user(body: UserCreate, db: AsyncSession = Depends(get_db)) -> U
 async def list_users(
     skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
 ) -> list[User]:
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    result = await db.execute(select(User).order_by(User.created_at).offset(skip).limit(limit))
     return list(result.scalars().all())
 
 
